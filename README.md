@@ -1,0 +1,86 @@
+# Charged Up Sim — FRC 2023
+
+A browser-based 3D simulator of the 2023 FIRST Robotics Competition game **Charged Up**.
+It uses three.js for rendering and the Rapier physics engine (WASM). It has no build step and no internet dependency, because both libraries are vendored in `vendor/`.
+
+## Run
+
+```bash
+./run.sh            # then open http://localhost:8023
+```
+
+(Any static server works. Opening `index.html` straight from disk won't work, because browsers block ES modules on `file://`.)
+
+## What's simulated
+
+**Field.** Built from the 2023 Game Manual §5 (Arena) and its figures, with positions cross-checked against Team 6328's `FieldConstants`. The field is mirrored for red, not rotated.
+- **Carpet & tape:** dark "Medallion" carpet, alliance-colored community and loading-zone lines, a white center line, 4 in black staging crosses, and white starting lines behind the walls.
+- **Grids:** three assemblies (6 ft 3 in, 5 ft 6 in, 6 ft 3 in) on an aluminum frame. Hybrid nodes are 16 in deep with 5 in dividers. Cone nodes are 1.66 in aluminum pipes (34 in / 46 in) with plugs and reflective tape, rising through the 35° textured slope (alliance-colored on the outer grids, black on co-op), with polycarbonate fins between them. Cube nodes are clear polycarbonate shelves with 3 in walls (the top-row rear wall is angled). Scored cones sit high on the pole.
+- **Charge stations:** a 4 × 8 ft frame hinged at its 9⅛ in top surface. It self-centers to level, travels ±15°, and has hinge friction. The polycarbonate ramps pivot and slide (about 34° when level, 11° / 71° fully tilted). Alliance-colored LEVEL lights and the logo decal are on top.
+- **Other elements:**
+  - Clear 12¼ in barriers on 16 in bases.
+  - ⅞ in cable protectors running to each charge station's center.
+  - Double substations with pipe grates, a 45° ramp, a window, a portal, and black sliding shelves at 37⅜ in.
+  - Wire-panel single substations with tilted chutes.
+  - Driver stations: diamond-plate base, window, team signs, and LED strings that fill as you score links.
+- **AprilTags:** real 16h5 tags (IDs 1–8) at the official heights.
+
+**Game pieces.** Pieces are rigid bodies. Cones (12.8 in, 1 lb 7 oz, convex hull with a square base) can tip over. Cubes are 9.5 in rounded cubes.
+
+**Robot.** Team 9999's double-jointed arm robot (profile in `src/robots.js`, mechanism in `src/mechanisms/`):
+- **Double-jointed arm (team 9999):** arm geometry based on FRC 6328's public 2023 code. Floor pickup depends on mode: in cube mode the front cube intake deploys and the arm waits at it for the handoff; in cone mode the arm picks cones up off the floor behind the robot (opposite the cube intake) and the cube intake stays up.
+  - Chassis: 25 in frame and SDS MK4i L2 swerve at 14.5 ft/s.
+  - Arm: double-jointed, shoulder 0.654 m up, segments of 0.638 m and 0.806 m plus a 0.261 m wrist, using their joint limits and their inverse-kinematics math.
+  - Front/back scoring: it scores off whichever side faces the grid.
+  - Gripper: yellow compliant wheels that eject cubes.
+
+**Arcade handling.**
+- **Arm:** moves smoothly and directly between presets and doesn't collide with the field. The cube intake swings out of the way when the arm comes down on its side.
+- **Scoring:** release a piece while it's lined up over a node (the status panel shows **✓ RELEASE TO SCORE**) and it slides straight into place. Pieces never get knocked loose.
+
+**Fouls (2023 manual §7).** Each foul credits the other alliance 5 points (tech foul: 12).
+- **G106:** taller than 6 ft 6 in.
+- **G107:** more than 48 in past the frame for over 3 s (tech foul if it scores).
+- **G108:** extended in the opponent's community or loading zone.
+- **G109:** extended in two directions.
+- **G302:** crossing the center line in auto.
+- **G304:** moving the opponent's charge station.
+- **G401:** knocking a piece out of the field.
+- **G403:** controlling more than one piece outside your zones.
+- **G404:** launching outside your community (tech foul).
+
+**Scoreboard and branding.** The official CHARGED UP and *FIRST* ENERGIZE logos, taken from the 2023 Game Manual, appear on the menu, the scoreboard, the charge station decals and the arena screens. The scoreboard is laid out like the 2023 broadcast real-time scoring bar: match name, a seconds countdown with the auto/teleop icon, scores, team numbers, link progress (n / 5, or n / 4 with coopertition), the coopertition handshake and the auto charge-station battery.
+
+**Rules and scoring.**
+- **Points:** auto and teleop piece values, links, supercharged nodes, mobility, auto dock/engage (one robot only), and endgame park/dock/engage.
+- **Bonuses:** coopertition (lowers the sustainability threshold to 4 links), sustainability RP, activation RP (≥ 26 charge station points), and win/tie RP.
+- **Timing:** charge station states are assessed after the period ends, the way the real field does it. The match timeline is 15 s auto, a 3 s pause, then 2:15 teleop with a 30 s endgame.
+
+**Human players.** HPs stock the double substation with whatever piece your LEDs request (they swap it if you change your mind). They drop pieces down the single substation chute when you're lined up with your intake running.
+
+**Single robot.** You're the only robot on the field. During autonomous, the AI code drives your robot through the routine you pick: score the preload high, over the charge station and back to engage, two-piece, and so on. It plans paths with A* and auto-balances.
+
+## Controls
+
+| Key | Action |
+| --- | --- |
+| W A S D | Drive (swerve, relative to the camera) |
+| J / L | Turn |
+| Shift (hold) | Intake — with no piece the arm drops to the floor automatically |
+| K | Score / release |
+| P | Holding a piece: high node · No piece: substation shelf + intake (press again to cancel) |
+| O / I | Mid / low (hybrid) node |
+| Space | Flip the third-person camera front ⇄ back |
+| E | Switch cone / cube mode (only that piece can be intaken; LEDs signal your human player) |
+| B (hold) | Auto-balance |
+| C | Other camera views |
+| H / Esc | Help / pause |
+
+The arm stows itself after a pickup or a score. The default camera follows the robot's position but not its rotation. When your piece is lined up over a valid node, the status panel shows **✓ RELEASE TO SCORE**. Cone poles need roughly ±8.5 cm accuracy, just like the real thing.
+
+## Known simplifications
+
+- The arm is visual only: it doesn't collide with field elements. Scoring is decided by where the piece is when you release it, and pieces that miss fall physically.
+- Pieces are grabbed in a fixed orientation (cones upright), so there's no tipped-cone wrist logic.
+- Bumpers riding up onto a raised charge station ramp lip are modeled with an applied torque rather than soft-bumper contact.
+- Fouls and penalties aren't detected or called.

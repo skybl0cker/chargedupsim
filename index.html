@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Charged Up Sim — FRC 2023</title>
+  <link rel="stylesheet" href="style.css?v=48" />
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "./vendor/three/three.module.js",
+        "three/addons/": "./vendor/three/addons/",
+        "./src/ai.js": "./src/ai.js?v=48",
+        "./src/constants.js": "./src/constants.js?v=48",
+        "./src/field.js": "./src/field.js?v=48",
+        "./src/game.js": "./src/game.js?v=48",
+        "./src/hud.js": "./src/hud.js?v=48",
+        "./src/input.js": "./src/input.js?v=48",
+        "./src/main.js": "./src/main.js?v=48",
+        "./src/physics.js": "./src/physics.js?v=48",
+        "./src/pieces.js": "./src/pieces.js?v=48",
+        "./src/robot.js": "./src/robot.js?v=48",
+        "./src/sound.js": "./src/sound.js?v=48",
+        "./src/util.js": "./src/util.js?v=48"
+      }
+    }
+  </script>
+  <!-- APP_VERSION bump: change ?v= above whenever src files change so browsers never mix old and new code -->
+  <script>
+    window.addEventListener('error', (e) => showErr(e.message + (e.filename ? ' (' + e.filename.split('/').pop() + ':' + e.lineno + ')' : '')));
+    window.addEventListener('unhandledrejection', (e) => showErr(String(e.reason && e.reason.message || e.reason)));
+    function showErr(msg) {
+      let el = document.getElementById('errbar');
+      if (!el) {
+        el = document.createElement('div');
+        el.id = 'errbar';
+        el.style.cssText = 'position:fixed;left:12px;right:12px;bottom:12px;z-index:99;background:#7f1d1d;color:#fff;padding:10px 14px;border-radius:8px;font:13px system-ui;white-space:pre-wrap';
+        document.body.appendChild(el);
+      }
+      el.textContent = 'Error: ' + msg + '\nTry a hard refresh (Ctrl+Shift+R). If it persists, send this message.';
+    }
+  </script>
+</head>
+<body>
+  <canvas id="view"></canvas>
+
+  <!-- 2023 FRC real-time scoring bar (audience display), laid out from a real 2023 broadcast frame -->
+  <div id="rtBar" class="hidden">
+    <div class="rt-top">
+      <div class="rt-logo left"><img src="assets/first-energize-dark.png" alt="FIRST ENERGIZE presented by Qualcomm" /></div>
+      <div class="rt-event" id="rtEvent">Charged Up Sim</div>
+      <div class="rt-divider"></div>
+      <div class="rt-match" id="rtMatch">Qualification 1</div>
+      <div class="rt-logo right"><img src="assets/charged-up.png" alt="CHARGED UP presented by Haas" /></div>
+    </div>
+    <div class="rt-main">
+      <div class="rt-half red"></div>
+      <div class="rt-half blue"></div>
+      <!-- red alliance (left) -->
+      <div class="rt-pill red"><span id="rtLinksRed">0</span><i class="rt-pill-ico"></i></div>
+      <div class="rt-ico-c red coop" id="rtCoopRed"></div>
+      <div class="rt-ico-c red batt" id="rtBattRed"></div>
+      <div class="rt-teams red" id="rtTeamsRed"></div>
+      <div class="rt-block red"><div class="rt-label" id="rtLabelRed">RED</div><div class="rt-score" id="rtScoreRed">0</div></div>
+      <!-- timer -->
+      <div class="rt-clock"><div id="rtTime">15</div><div id="rtMode"></div></div>
+      <!-- blue alliance (right) -->
+      <div class="rt-block blue"><div class="rt-label" id="rtLabelBlue">BLUE</div><div class="rt-score" id="rtScoreBlue">0</div></div>
+      <div class="rt-teams blue" id="rtTeamsBlue"></div>
+      <div class="rt-ico-c blue batt" id="rtBattBlue"></div>
+      <div class="rt-ico-c blue coop" id="rtCoopBlue"></div>
+      <div class="rt-pill blue"><i class="rt-pill-ico"></i><span id="rtLinksBlue">0</span></div>
+    </div>
+  </div>
+
+  <div id="grids" class="hidden">
+    <div class="gridwrap"><div class="glabel blue">BLUE GRID</div><div class="gridmap" id="gridBlue"></div></div>
+    <div class="gridwrap"><div class="glabel red">RED GRID</div><div class="gridmap" id="gridRed"></div></div>
+    <div id="csInfo"></div>
+  </div>
+
+  <div id="status" class="hidden"></div>
+  <div id="toasts"></div>
+  <div id="camLabel" class="hidden"></div>
+
+  <div id="help" class="hidden">
+    <h3>Controls</h3>
+    <table>
+      <tr><td>W A S D</td><td>Drive (swerve, relative to the camera)</td></tr>
+      <tr><td>J / L</td><td>Turn left / right</td></tr>
+      <tr><td>Shift (hold)</td><td>Intake — with no piece the arm drops to the floor automatically</td></tr>
+      <tr><td>K</td><td>Score / release the game piece</td></tr>
+      <tr><td>P</td><td>Holding a piece: high node · No piece: substation shelf + intake on (press again to cancel)</td></tr>
+      <tr><td>O</td><td>Mid node</td></tr>
+      <tr><td>I</td><td>Low (hybrid) node</td></tr>
+      <tr><td>Space</td><td>Flip the camera front ⇄ back</td></tr>
+      <tr><td>E</td><td>Switch cone / cube mode (you can only intake that piece; LEDs signal your human player)</td></tr>
+      <tr><td>B (hold)</td><td>Auto-balance on the charge station</td></tr>
+      <tr><td>C</td><td>Other camera views</td></tr>
+      <tr><td>H / Esc</td><td>Toggle this help / pause</td></tr>
+    </table>
+    <p>The arm stows itself after you pick up or score a piece.</p>
+    <p><b>Gamepad:</b> left stick drive · right stick turn · RT intake · A score · Y high/substation · X mid · B low · RB cone/cube · Back flip camera · Start pause</p>
+  </div>
+
+  <div id="menu" class="overlay">
+    <div class="panel small home">
+      <img class="cu-logo" src="assets/charged-up.png" alt="CHARGED UP" />
+      <div class="buttons col">
+        <button id="btnMatch" class="primary">Single Player</button>
+      </div>
+      <p class="hint">Press <b>H</b> in-game for controls</p>
+    </div>
+  </div>
+
+  <div id="pause" class="overlay hidden">
+    <div class="panel small">
+      <h2>Paused</h2>
+      <div class="buttons col">
+        <button id="btnResume" class="primary">Resume</button>
+        <button id="btnRestart">Restart</button>
+        <button id="btnMenu">Main menu</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="results" class="overlay hidden">
+    <div class="panel">
+      <h2>Match Results</h2>
+      <div id="resultsBody"></div>
+      <div class="buttons">
+        <button id="btnAgain" class="primary">Play again</button>
+        <button id="btnResMenu">Main menu</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="loading" class="overlay"><div class="panel small"><h2>Loading physics…</h2></div></div>
+
+  <script type="module">import "./src/main.js";</script>
+</body>
+</html>
