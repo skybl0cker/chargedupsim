@@ -76,11 +76,19 @@ It uses three.js for rendering and the Rapier physics engine (WASM). It has no b
 | C | Other camera views |
 | H / Esc | Help / pause |
 
-The arm stows itself after a pickup or a score. The default camera follows the robot's position but not its rotation. When your piece is lined up over a valid node, the status panel shows **✓ RELEASE TO SCORE**. Cone poles need roughly ±8.5 cm accuracy, just like the real thing.
+The arm stows itself after a pickup or a score. The default camera follows the robot's position but not its rotation. Cone poles need roughly ±8.5 cm accuracy, just like the real thing.
 
 ## Known simplifications
 
-- The arm is visual only: it doesn't collide with field elements. Scoring is decided by where the piece is when you release it, and pieces that miss fall physically.
-- Pieces are grabbed in a fixed orientation (cones upright), so there's no tipped-cone wrist logic.
-- Bumpers riding up onto a raised charge station ramp lip are modeled with an applied torque rather than soft-bumper contact.
-- Fouls and penalties aren't detected or called.
+- The arm is visual only: it doesn't collide with field elements. A piece scores if it's lined up over a node when you release it.
+- Cones are always held upright, so there's no tipped-cone handling.
+- Fouls are detected automatically for a solo robot; rules that need opponents (pinning, G209 contact, etc.) aren't modeled.
+
+## Credits
+
+This is an unofficial fan project and isn't affiliated with or endorsed by *FIRST*.
+
+- ***FIRST*® Robotics Competition:** CHARGED UP℠, *FIRST*® ENERGIZE℠, and their logos are trademarks of *FIRST*. Field dimensions, rules, and scoring come from the [2023 FRC Game Manual](https://www.firstinspires.org/robotics/frc/game-and-season). The logos in `assets/` are taken from that manual.
+- **Team 254, The Cheesy Poofs:** the match sounds in `assets/audio/` (start, end-of-auto/match buzzer, teleop start, endgame warning) come from [Cheesy Arena](https://github.com/Team254/cheesy-arena), their open-source field management system.
+- **Team 6328, Mechanical Advantage:** field element positions were cross-checked against `FieldConstants` from their [RobotCode2023](https://github.com/Mechanical-Advantage/RobotCode2023). The team 9999 robot's double-jointed arm geometry, joint limits, inverse kinematics, and cube intake are based on that code (`arm_config.json`, `ArmKinematics.java`, `ArmPose.java`, `CubeIntake.java`) and their 2023 Open Alliance build thread.
+- **Libraries:** [three.js](https://threejs.org) (MIT) for 3D rendering and [Rapier](https://rapier.rs) (Apache 2.0) for physics.
