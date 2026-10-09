@@ -1,11 +1,11 @@
 import * as THREE from 'three';
 import { IN } from '../constants.js';
-import { MAT, box, clamp } from '../util.js';
+import { MAT, box, clamp, canvasTexture } from '../util.js';
 
 // FRC 2910 Jack in the Bot — 2023 robot "Phantom".
 // Geometry, limits, speeds and every arm pose come from their public code
 // (FRCTeam2910/2023CompetitionRobot-Public: ArmSubsystem.java, ArmPoseConstants.java, ArmIOFalcon500.java);
-// look from their CAD release and reveal ("26x28 frame, <17 in tall stowed, 2-stage cascade telescoping arm").
+// look from their CAD release, reveal and competition photos ("26x28 frame, <17 in tall stowed, 2-stage cascade telescoping arm").
 const deg = (d) => (d * Math.PI) / 180;
 const PIVOT_X = -10.25 * IN; // shoulder pivot: behind robot center...
 const PIVOT_H = 13.25 * IN; // ...and above the carpet (ORIGIN_PIVOT_OFFSET)
@@ -51,90 +51,183 @@ export class Arm2910 {
   // ---------------------------------------------------------------- visuals
   build(root) {
     const fy = (h) => h - this.robot.floorY;
-    const green = new THREE.MeshStandardMaterial({ color: 0x1f7a3c, metalness: 0.35, roughness: 0.45 });
-    const gray = new THREE.MeshStandardMaterial({ color: 0x9aa0a6, metalness: 0.7, roughness: 0.35 });
-    const black = new THREE.MeshStandardMaterial({ color: 0x18191b, metalness: 0.3, roughness: 0.5 });
-    const pink = new THREE.MeshStandardMaterial({ color: 0xe0559b, metalness: 0.5, roughness: 0.35 });
-    const gold = new THREE.MeshStandardMaterial({ color: 0xd2a72c, metalness: 0.8, roughness: 0.3 });
-    const falcon = new THREE.MeshStandardMaterial({ color: 0x8c9196, metalness: 0.75, roughness: 0.35 });
+    // lightened (triangle-truss) aluminum, the look of 2910's arm and rails; green powder-coated plates
+    const lattice = (bg, hole, w = 256, h = 64, rows = 1) => {
+      const t = canvasTexture(w, h, (g) => {
+        g.fillStyle = bg;
+        g.fillRect(0, 0, w, h);
+        g.fillStyle = hole;
+        const n = Math.round((w / h) * 2 * rows);
+        const ch = h / rows;
+        for (let r = 0; r < rows; r++) for (let k = 0; k < n; k++) {
+          const x0 = (k * w) / n, x1 = ((k + 1) * w) / n, y0 = r * ch + ch * 0.18, y1 = (r + 1) * ch - ch * 0.18, inset = (x1 - x0) * 0.16;
+          g.beginPath();
+          if (k % 2) { g.moveTo(x0 + inset, y0); g.lineTo(x1 - inset, y0); g.lineTo((x0 + x1) / 2, y1); }
+          else { g.moveTo((x0 + x1) / 2, y0); g.lineTo(x1 - inset, y1); g.lineTo(x0 + inset, y1); }
+          g.fill();
+        }
+      });
+      t.wrapS = t.wrapT = THREE.RepeatWrapping;
+      return t;
+    };
+    const mat = (tex, rep, metal = 0.75) => {
+      const t = tex.clone();
+      t.needsUpdate = true;
+      t.repeat.set(rep, 1);
+      return new THREE.MeshStandardMaterial({ map: t, metalness: metal, roughness: 0.35 });
+    };
+    const silverTex = lattice('#c9cdd2', '#3b3f45');
+    const greenTex = lattice('#2e8a3e', '#163d1d', 128, 128, 2);
+    const silverArm = (len) => mat(silverTex, Math.max(1, len / 0.12));
+    const green = new THREE.MeshStandardMaterial({ color: 0x2e8a3e, metalness: 0.35, roughness: 0.45 });
+    const greenLat = mat(greenTex, 1, 0.35);
+    const silver = new THREE.MeshStandardMaterial({ color: 0xc4c8cd, metalness: 0.8, roughness: 0.3 });
+    const darkRoller = new THREE.MeshStandardMaterial({ color: 0x2b2d30, metalness: 0.2, roughness: 0.6 });
+    const gold = new THREE.MeshStandardMaterial({ color: 0xc9a03a, metalness: 0.85, roughness: 0.3 });
+    const ledGreen = new THREE.MeshStandardMaterial({ color: 0x5dff7a, emissive: 0x2bff52, emissiveIntensity: 1.6 });
 
-    // shoulder tower: green side plates rising to the pivot at the back of the robot
+    // silver triangle-truss rail down the middle of the robot (belly structure under the arm)
+    for (const z of [-0.07, 0.07]) box(0.62, 0.1, 0.008, silverArm(0.62), new THREE.Vector3(0.02, fy(0.11), z), root);
+    box(0.62, 0.012, 0.15, silver, new THREE.Vector3(0.02, fy(0.165), 0), root);
+
+    // shoulder tower: green lattice side plates + silver center plate up to the pivot at the back
     const plate = new THREE.Shape();
-    plate.moveTo(-0.42 - PIVOT_X, fy(0.07) - fy(PIVOT_H));
-    plate.lineTo(-0.08 - PIVOT_X, fy(0.07) - fy(PIVOT_H));
-    plate.lineTo(0.07, 0.05);
-    plate.lineTo(-0.09, 0.09);
+    plate.moveTo(-0.16, 0.07 - PIVOT_H);
+    plate.lineTo(0.2, 0.07 - PIVOT_H);
+    plate.lineTo(0.08, 0.04);
+    plate.lineTo(-0.08, 0.09);
     plate.closePath();
-    const plateGeo = new THREE.ExtrudeGeometry(plate, { depth: 0.012, bevelEnabled: false });
-    for (const z of [-0.145, 0.133]) {
-      const m = new THREE.Mesh(plateGeo, green);
+    const plateGeo = new THREE.ExtrudeGeometry(plate, { depth: 0.01, bevelEnabled: false });
+    plateGeo.computeBoundingBox();
+    // planar UVs for the lattice texture
+    const pos = plateGeo.attributes.position, uv = plateGeo.attributes.uv;
+    for (let k = 0; k < pos.count; k++) uv.setXY(k, (pos.getX(k) + 0.2) / 0.4, (pos.getY(k) + 0.35) / 0.45);
+    for (const z of [-0.155, 0.135]) {
+      const m = new THREE.Mesh(plateGeo, greenLat);
       m.position.set(PIVOT_X, fy(PIVOT_H), z);
       m.castShadow = true;
       root.add(m);
     }
-    // four Falcon 500s driving the shoulder
-    for (const [x, h] of [[-0.36, 0.3], [-0.36, 0.2], [-0.47, 0.25], [-0.25, 0.14]]) {
-      const f = new THREE.Mesh(new THREE.CylinderGeometry(0.031, 0.031, 0.1, 18), falcon);
+    box(0.22, PIVOT_H - 0.08, 0.008, silver, new THREE.Vector3(PIVOT_X - 0.02, fy((PIVOT_H + 0.08) / 2), 0.0), root);
+    // shoulder motors (Falcon 500s) coaxial-ish behind the pivot
+    for (const [dx, dh] of [[-0.11, 0.0], [-0.11, -0.09]]) {
+      const f = new THREE.Mesh(new THREE.CylinderGeometry(0.032, 0.032, 0.26, 20), silver);
       f.rotation.x = Math.PI / 2;
-      f.position.set(x - (-10.25 * IN - PIVOT_X), fy(h), -0.06);
+      f.position.set(PIVOT_X + dx, fy(PIVOT_H + dh), -0.01);
       f.castShadow = true;
       root.add(f);
     }
+
+    // shoulder drive: big green spoked sprocket at the pivot, gold chain down to a small sprocket mid-robot
+    const spokes = canvasTexture(128, 128, (g) => {
+      g.fillStyle = '#2e8a3e';
+      g.beginPath(); g.arc(64, 64, 63, 0, Math.PI * 2); g.fill();
+      g.fillStyle = '#123018';
+      for (let k = 0; k < 6; k++) {
+        g.beginPath();
+        g.moveTo(64, 64);
+        g.arc(64, 64, 52, (k * Math.PI) / 3 + 0.18, ((k + 1) * Math.PI) / 3 - 0.18);
+        g.closePath();
+        g.fill();
+      }
+      g.fillStyle = '#2e8a3e';
+      g.beginPath(); g.arc(64, 64, 20, 0, Math.PI * 2); g.fill();
+      g.fillStyle = '#b8bcc1';
+      g.beginPath(); g.arc(64, 64, 12, 0, Math.PI * 2); g.fill();
+    });
+    const sprR = 0.165, smallR = 0.05;
+    const sprMat = new THREE.MeshStandardMaterial({ map: spokes, metalness: 0.4, roughness: 0.45, transparent: true, alphaTest: 0.5 });
+    const sprZ = 0.165;
+    // small drive sprocket + chain run (fixed to the chassis)
+    const small = [0.12, 0.14]; // x, h of the motor sprocket
+    const smallM = new THREE.Mesh(new THREE.CylinderGeometry(smallR, smallR, 0.015, 20), green);
+    smallM.rotation.x = Math.PI / 2;
+    smallM.position.set(small[0], fy(small[1]), sprZ);
+    root.add(smallM);
+    const chainRun = (ax, ah, bx, bh) => {
+      const len = Math.hypot(bx - ax, bh - ah);
+      const m = box(len, 0.012, 0.012, gold, new THREE.Vector3((ax + bx) / 2, fy((ah + bh) / 2), sprZ), root);
+      m.rotation.z = Math.atan2(bh - ah, bx - ax);
+    };
+    const ang = Math.atan2(small[1] - PIVOT_H, small[0] - PIVOT_X);
+    const nrm = ang + Math.PI / 2;
+    chainRun(PIVOT_X + sprR * Math.cos(nrm), PIVOT_H + sprR * Math.sin(nrm), small[0] + smallR * Math.cos(nrm), small[1] + smallR * Math.sin(nrm));
+    chainRun(PIVOT_X - sprR * Math.cos(nrm), PIVOT_H - sprR * Math.sin(nrm), small[0] - smallR * Math.cos(nrm), small[1] - smallR * Math.sin(nrm));
 
     // arm: rotates about the pivot; the telescope runs OFFSET off the pivot axis
     this.gArm = new THREE.Group();
     this.gArm.position.set(PIVOT_X, fy(PIVOT_H), 0);
     root.add(this.gArm);
-    const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.3, 20), gray);
+    const spr = new THREE.Mesh(new THREE.CylinderGeometry(sprR, sprR, 0.015, 40), sprMat);
+    spr.rotation.x = Math.PI / 2;
+    spr.position.z = sprZ;
+    this.gArm.add(spr);
+    const chainRing = new THREE.Mesh(new THREE.TorusGeometry(sprR + 0.004, 0.007, 6, 48), gold);
+    chainRing.position.z = sprZ;
+    this.gArm.add(chainRing);
+    const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.055, 0.34, 24), silver);
     hub.rotation.x = Math.PI / 2;
     this.gArm.add(hub);
-    // big gold sector gear on the shoulder
-    const sector = new THREE.Mesh(new THREE.RingGeometry(0.17, 0.25, 40, 1, deg(150), deg(130)), gold);
-    sector.position.z = 0.152;
-    this.gArm.add(sector);
-    const sectorBack = sector.clone();
-    sectorBack.rotation.y = Math.PI;
-    sectorBack.position.z = 0.151;
-    this.gArm.add(sectorBack);
     const tube = new THREE.Group();
     tube.position.y = -OFFSET;
     this.gArm.add(tube);
-    box(0.06, OFFSET + 0.04, 0.26, green, new THREE.Vector3(0.02, OFFSET / 2, 0), tube); // bracket from hub to tube
-    box(L_MIN - 0.05, 0.08, 0.15, black, new THREE.Vector3((L_MIN - 0.05) / 2 - 0.08, 0, 0), tube); // stage 1
+    // sloped silver bracket from the hub down to the telescope (why the stowed arm slopes toward the front)
+    const brLen = Math.hypot(0.3, OFFSET);
+    const bracket = box(brLen, 0.07, 0.12, silverArm(brLen), new THREE.Vector3(0.15, OFFSET / 2, 0), tube);
+    bracket.rotation.z = -Math.atan2(OFFSET, 0.3);
+    const ledA = box(brLen, 0.012, 0.03, ledGreen, new THREE.Vector3(0.15, OFFSET / 2 + 0.042, 0), tube);
+    ledA.rotation.z = bracket.rotation.z;
+    // stage 1 (outer) with the green lattice housing at its base
+    box(L_MIN - 0.04, 0.085, 0.12, silverArm(L_MIN), new THREE.Vector3((L_MIN - 0.04) / 2 - 0.04, 0, 0), tube);
+    box(0.36, 0.12, 0.16, greenLat, new THREE.Vector3(0.2, 0, 0), tube);
+    box(L_MIN - 0.08, 0.01, 0.03, ledGreen, new THREE.Vector3((L_MIN - 0.08) / 2, 0.047, 0), tube);
     this.stage2 = new THREE.Group();
     tube.add(this.stage2);
-    box(L_MIN - 0.08, 0.066, 0.125, gray, new THREE.Vector3((L_MIN - 0.08) / 2 - 0.06, 0, 0), this.stage2);
+    box(L_MIN - 0.08, 0.07, 0.1, silverArm(L_MIN), new THREE.Vector3((L_MIN - 0.08) / 2 - 0.02, 0, 0), this.stage2);
     this.stage3 = new THREE.Group();
     tube.add(this.stage3);
-    box(L_MIN - 0.1, 0.054, 0.1, pink, new THREE.Vector3(-(L_MIN - 0.1) / 2, 0, 0), this.stage3);
+    box(L_MIN - 0.1, 0.058, 0.084, silverArm(L_MIN), new THREE.Vector3(-(L_MIN - 0.1) / 2, 0, 0), this.stage3);
 
-    // wrist + roller intake (claw of four black rollers between silver side plates)
+    // wrist + claw: silver spoked side plates with dark rollers
     this.gWrist = new THREE.Group();
     this.stage3.add(this.gWrist);
-    const axle = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.42, 16), gray);
+    const axle = new THREE.Mesh(new THREE.CylinderGeometry(0.028, 0.028, 0.44, 16), silver);
     axle.rotation.x = Math.PI / 2;
     this.gWrist.add(axle);
-    for (const z of [-0.2, 0.2]) {
-      const sp = new THREE.Shape();
-      sp.moveTo(-0.03, -0.05); sp.lineTo(0.33, -0.15); sp.lineTo(0.33, 0.15); sp.lineTo(-0.03, 0.05); sp.closePath();
-      const m = new THREE.Mesh(new THREE.ExtrudeGeometry(sp, { depth: 0.01, bevelEnabled: false }), MAT.alu);
-      m.position.z = z - 0.005;
-      m.castShadow = true;
-      this.gWrist.add(m);
+    const clawTex = canvasTexture(128, 128, (g) => {
+      g.clearRect(0, 0, 128, 128);
+      g.strokeStyle = '#c4c8cd';
+      g.lineWidth = 9;
+      g.lineJoin = 'round';
+      const P = [[6, 64], [122, 10], [122, 118]];
+      g.beginPath(); g.moveTo(...P[0]); g.lineTo(...P[1]); g.lineTo(...P[2]); g.closePath(); g.stroke();
+      for (const [x, y] of [[64, 37], [64, 91], [122, 64]]) { g.beginPath(); g.moveTo(...P[0]); g.lineTo(x, y); g.stroke(); }
+      g.beginPath(); g.moveTo(64, 37); g.lineTo(122, 118); g.moveTo(64, 91); g.lineTo(122, 10); g.stroke();
+    });
+    const clawMat = new THREE.MeshStandardMaterial({ map: clawTex, metalness: 0.8, roughness: 0.3, transparent: true, alphaTest: 0.4, side: THREE.DoubleSide });
+    for (const z of [-0.205, 0.205]) {
+      const pl = new THREE.Mesh(new THREE.PlaneGeometry(0.36, 0.34), clawMat);
+      pl.position.set(0.16, 0, z);
+      this.gWrist.add(pl);
     }
     this.rollers = [];
-    for (const [x, y, r] of [[0.1, 0.1, 0.035], [0.1, -0.1, 0.035], [0.3, 0.13, 0.04], [0.3, -0.13, 0.04]]) {
-      const ro = new THREE.Mesh(new THREE.CylinderGeometry(r, r, 0.39, 18), black);
+    for (const [x, y, r] of [[0.31, 0.135, 0.042], [0.31, -0.135, 0.042], [0.1, 0.08, 0.035]]) {
+      const ro = new THREE.Mesh(new THREE.CylinderGeometry(r, r, 0.4, 20), darkRoller);
       ro.rotation.x = Math.PI / 2;
       ro.position.set(x, y, 0);
       ro.castShadow = true;
       this.gWrist.add(ro);
       this.rollers.push({ m: ro, dir: y > 0 ? 1 : -1 });
     }
-    // LEDs (CANdle strip) signal the human player
+
+    // orange robot signal light on top + small LED strips that signal the human player
+    this.rsl = new THREE.MeshStandardMaterial({ color: 0xff9a1f, emissive: 0xff7a00, emissiveIntensity: 1.5 });
+    const rsl = new THREE.Mesh(new THREE.SphereGeometry(0.028, 16, 10, 0, Math.PI * 2, 0, Math.PI / 2), this.rsl);
+    rsl.position.set(0.0, fy(0.175), -0.11);
+    root.add(rsl);
+    box(0.04, 0.03, 0.04, MAT.black, new THREE.Vector3(0.0, fy(0.16), -0.11), root);
     this.robot.ledMat = new THREE.MeshStandardMaterial({ color: 0xffd400, emissive: 0xffd400, emissiveIntensity: 1.3 });
-    box(0.25, 0.015, 0.015, this.robot.ledMat, new THREE.Vector3(PIVOT_X - 0.05, fy(0.12), 0.15), root);
-    box(0.25, 0.015, 0.015, this.robot.ledMat, new THREE.Vector3(PIVOT_X - 0.05, fy(0.12), -0.16), root);
+    for (const z of [0.18, -0.19]) box(0.2, 0.012, 0.012, this.robot.ledMat, new THREE.Vector3(PIVOT_X + 0.02, fy(0.1), z), root);
   }
 
   colliders() {
@@ -248,6 +341,7 @@ export class Arm2910 {
     this.stage2.position.x = e / 2;
     this.stage3.position.x = this.q.L;
     this.gWrist.rotation.z = this.q.w;
+    if (this.rsl) this.rsl.emissiveIntensity = Math.floor(performance.now() / 500) % 2 ? 1.6 : 0.25;
     if (this.robot.intaking) for (const r of this.rollers) r.m.rotation.y += 0.5 * r.dir;
   }
 }
