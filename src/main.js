@@ -7,6 +7,7 @@ import { initPhysics, createWorld, phys } from './physics.js';
 import { buildField, driverStationY } from './field.js';
 import { Game } from './game.js';
 import { Input } from './input.js';
+import { ACTIONS, defaultBindings, keyName, padName, normKey } from './controls.js';
 import { HUD } from './hud.js';
 import { Sound } from './sound.js';
 import { AIController, planPath } from './ai.js';
@@ -182,7 +183,7 @@ function updateCamera(dt) {
 function readConfig(practice = false) {
   return {
     alliance: 'blue',
-    station: 1, // center driver station, in front of the charge station
+    station: +(document.getElementById('optStation')?.value ?? 1), // 0 scoring table side, 1 center, 2 loading zone side
     driveMode: 'swerve',
     robot: document.getElementById('optRobot')?.value || '2910',
     autoRoutine: document.getElementById('optAuto')?.value || 'high_mobility_engage',
@@ -224,6 +225,7 @@ function startGame(cfg) {
 }
 
 input.handlers.pause = () => {
+  if (!$('controls').classList.contains('hidden')) { closeControls(); return; }
   if (!game || !$('menu').classList.contains('hidden') || !$('results').classList.contains('hidden')) return;
   paused = !paused;
   $('pause').classList.toggle('hidden', !paused);
@@ -231,7 +233,7 @@ input.handlers.pause = () => {
 input.handlers.help = () => $('help').classList.toggle('hidden');
 
 // remember the robot / auto picks between visits
-for (const id of ['optRobot', 'optAuto']) {
+for (const id of ['optRobot', 'optAuto', 'optStation']) {
   const el = $(id);
   try {
     const saved = localStorage.getItem(id);
@@ -251,6 +253,90 @@ const toMenu = () => {
   hud.show(false);
 };
 $('btnMenu').onclick = toMenu;
+
+// ------------------------------------------------------------ controls remapping
+const bindLabel = (id) => [keyName(input.bindings.kb[id]), padName(input.bindings.gp[id])].filter(Boolean).join('  ·  ') || '—';
+function renderHelp() {
+  $('helpTable').innerHTML = ACTIONS.map((a) => `<tr><td>${bindLabel(a.id)}</td><td>${a.label}</td></tr>`).join('');
+}
+let listening = null; // { id, dev: 'kb' | 'gp', base }
+function renderControls() {
+  const b = input.bindings;
+  let html = '';
+  let group = '';
+  for (const a of ACTIONS) {
+    if (a.group !== group) {
+      group = a.group;
+      html += `<tr><th>${group}</th><th>Keyboard</th><th>Gamepad</th></tr>`;
+    }
+    const cell = (dev, name) => {
+      const on = listening && listening.id === a.id && listening.dev === dev;
+      return `<td class="bind"><button class="bindbtn${on ? ' listen' : name ? '' : ' empty'}" data-id="${a.id}" data-dev="${dev}">${on ? 'Press…' : name || 'none'}</button></td>`;
+    };
+    html += `<tr><td>${a.label}</td>${cell('kb', keyName(b.kb[a.id]))}${cell('gp', padName(b.gp[a.id]))}</tr>`;
+  }
+  $('ctlTable').innerHTML = html;
+  renderHelp();
+}
+function assign(value) {
+  const { id, dev } = listening;
+  const b = { kb: { ...input.bindings.kb }, gp: { ...input.bindings.gp } };
+  if (value) for (const k in b[dev]) if (b[dev][k] === value) b[dev][k] = null; // one action per key / button
+  b[dev][id] = value;
+  input.setBindings(b);
+  stopListening();
+}
+function stopListening() {
+  listening = null;
+  input.capture = null;
+  document.activeElement?.blur?.();
+  renderControls();
+}
+function padSnapshot() {
+  const gp = input.gamepad();
+  return gp ? { buttons: gp.buttons.map((x) => x.value > 0.5), axes: gp.axes.map((x) => Math.abs(x) > 0.3) } : { buttons: [], axes: [] };
+}
+$('ctlTable').addEventListener('click', (e) => {
+  const btn = e.target.closest('.bindbtn');
+  if (!btn) return;
+  listening = { id: btn.dataset.id, dev: btn.dataset.dev, base: padSnapshot() };
+  input.capture = ({ key }) => {
+    if (key === 'Escape') stopListening();
+    else if (key === 'Backspace' || key === 'Delete') assign(null);
+    else if (listening.dev === 'kb') assign(normKey(key));
+  };
+  renderControls();
+});
+function watchControls() {
+  if ($('controls').classList.contains('hidden')) return;
+  requestAnimationFrame(watchControls);
+  const gp = input.gamepad();
+  $('ctlPad').textContent = gp ? `Gamepad connected` : 'No gamepad detected (press a button on it)';
+  if (!listening || listening.dev !== 'gp' || !gp) return;
+  const base = listening.base;
+  const bi = gp.buttons.findIndex((x, i) => x.value > 0.5 && !base.buttons[i]);
+  if (bi >= 0) return assign('b' + bi);
+  const ai = gp.axes.findIndex((x, i) => Math.abs(x) > 0.6 && !base.axes[i]);
+  if (ai >= 0) return assign(`a${ai}${gp.axes[ai] > 0 ? '+' : '-'}`);
+  // release anything that was held when listening started so it can be picked next
+  gp.buttons.forEach((x, i) => { if (x.value < 0.2) base.buttons[i] = false; });
+  gp.axes.forEach((x, i) => { if (Math.abs(x) < 0.2) base.axes[i] = false; });
+}
+function openControls() {
+  $('controls').classList.remove('hidden');
+  renderControls();
+  watchControls();
+}
+function closeControls() {
+  stopListening();
+  $('controls').classList.add('hidden');
+}
+$('btnControls').onclick = openControls;
+$('btnControls2').onclick = openControls;
+$('ctlDone').onclick = closeControls;
+$('ctlResetKb').onclick = () => { input.setBindings({ kb: defaultBindings().kb, gp: { ...input.bindings.gp } }); stopListening(); };
+$('ctlClearGp').onclick = () => { input.setBindings({ kb: { ...input.bindings.kb }, gp: defaultBindings().gp }); stopListening(); };
+renderHelp();
 $('btnResMenu').onclick = toMenu;
 
 // ------------------------------------------------------------ main loop

@@ -61,7 +61,9 @@ It uses three.js for rendering and the Rapier physics engine (WASM). It has no b
 
 ## Controls
 
-| Key | Action |
+Everything can be remapped from **Controls** in the main or pause menu, and your bindings are saved in the browser. The keyboard starts on the layout below. The gamepad starts unbound: click a gamepad box, then press a button or push a stick direction to set it up.
+
+| Default key | Action |
 | --- | --- |
 | W A S D | Drive (swerve, relative to the camera) |
 | J / L | Turn |
@@ -74,6 +76,8 @@ It uses three.js for rendering and the Rapier physics engine (WASM). It has no b
 | B (hold) | Auto-balance |
 | C | Other camera views |
 | H / Esc | Help / pause |
+
+Pick your starting position (station 1, 2 or 3) on the main menu. The preload matches the node in front of you (cube in the center, cones on the sides).
 
 The arm stows itself after a pickup or a score. The default camera follows the robot's position but not its rotation. Cone poles need roughly ±8.5 cm accuracy, just like the real thing.
 

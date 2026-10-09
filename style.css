@@ -151,3 +151,15 @@ button.primary:hover { background: #ffe14d; }
 .panel.home .buttons { width: 100%; }
 .panel.home .hint { margin-top: 14px; }
 .panel.home select { width: 100%; padding: 10px; font-size: 15px; margin-bottom: 8px; }
+
+/* controls remapping */
+.panel.controls { width: min(640px, 100%); }
+.ctl-scroll { max-height: min(62vh, 560px); overflow-y: auto; margin-top: 10px; }
+#ctlTable { width: 100%; border-collapse: collapse; font-size: 14px; }
+#ctlTable th { text-align: left; font-size: 12px; letter-spacing: 1px; text-transform: uppercase; opacity: .55; padding: 10px 6px 4px; }
+#ctlTable td { padding: 4px 6px; border-bottom: 1px solid #222835; }
+#ctlTable td.bind { width: 150px; }
+#ctlTable .bindbtn { width: 100%; padding: 7px 8px; font-size: 13px; font-weight: 700; border-radius: 7px; text-align: center; }
+#ctlTable .bindbtn.empty { color: #6b7385; font-weight: 500; }
+#ctlTable .bindbtn.listen { background: #ffd400; color: #111; border-color: #ffd400; }
+#ctlPad { margin: 0; align-self: center; }

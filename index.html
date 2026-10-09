@@ -4,24 +4,25 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Charged Up Sim — FRC 2023</title>
-  <link rel="stylesheet" href="style.css?v=54" />
+  <link rel="stylesheet" href="style.css?v=55" />
   <script type="importmap">
     {
       "imports": {
         "three": "./vendor/three/three.module.js",
         "three/addons/": "./vendor/three/addons/",
-        "./src/ai.js": "./src/ai.js?v=54",
-        "./src/constants.js": "./src/constants.js?v=54",
-        "./src/field.js": "./src/field.js?v=54",
-        "./src/game.js": "./src/game.js?v=54",
-        "./src/hud.js": "./src/hud.js?v=54",
-        "./src/input.js": "./src/input.js?v=54",
-        "./src/main.js": "./src/main.js?v=54",
-        "./src/physics.js": "./src/physics.js?v=54",
-        "./src/pieces.js": "./src/pieces.js?v=54",
-        "./src/robot.js": "./src/robot.js?v=54",
-        "./src/sound.js": "./src/sound.js?v=54",
-        "./src/util.js": "./src/util.js?v=54"
+        "./src/ai.js": "./src/ai.js?v=55",
+        "./src/constants.js": "./src/constants.js?v=55",
+        "./src/controls.js": "./src/controls.js?v=55",
+        "./src/field.js": "./src/field.js?v=55",
+        "./src/game.js": "./src/game.js?v=55",
+        "./src/hud.js": "./src/hud.js?v=55",
+        "./src/input.js": "./src/input.js?v=55",
+        "./src/main.js": "./src/main.js?v=55",
+        "./src/physics.js": "./src/physics.js?v=55",
+        "./src/pieces.js": "./src/pieces.js?v=55",
+        "./src/robot.js": "./src/robot.js?v=55",
+        "./src/sound.js": "./src/sound.js?v=55",
+        "./src/util.js": "./src/util.js?v=55"
       }
     }
   </script>
@@ -85,22 +86,9 @@
 
   <div id="help" class="hidden">
     <h3>Controls</h3>
-    <table>
-      <tr><td>W A S D</td><td>Drive (swerve, relative to the camera)</td></tr>
-      <tr><td>J / L</td><td>Turn left / right</td></tr>
-      <tr><td>Shift (hold)</td><td>Intake — with no piece the arm drops to the floor automatically</td></tr>
-      <tr><td>K</td><td>Score / release the game piece</td></tr>
-      <tr><td>P</td><td>Holding a piece: high node · No piece: substation shelf + intake on (press again to cancel)</td></tr>
-      <tr><td>O</td><td>Mid node</td></tr>
-      <tr><td>I</td><td>Low (hybrid) node</td></tr>
-      <tr><td>Space</td><td>Flip the camera front ⇄ back</td></tr>
-      <tr><td>E</td><td>Switch cone / cube mode (you can only intake that piece; LEDs signal your human player)</td></tr>
-      <tr><td>B (hold)</td><td>Auto-balance on the charge station</td></tr>
-      <tr><td>C</td><td>Other camera views</td></tr>
-      <tr><td>H / Esc</td><td>Toggle this help / pause</td></tr>
-    </table>
+    <table id="helpTable"></table>
     <p>The arm stows itself after you pick up or score a piece.</p>
-    <p><b>Gamepad:</b> left stick drive · right stick turn · RT intake · A score · Y high/substation · X mid · B low · RB cone/cube · Back flip camera · Start pause</p>
+    <p>Change keys or set up a gamepad from <b>Controls</b> in the main or pause menu.</p>
   </div>
 
   <div id="menu" class="overlay">
@@ -121,7 +109,13 @@
           <option value="none">Auto: None (sit still)</option>
           <option value="manual">Auto: Manual (you drive it)</option>
         </select>
+        <select id="optStation" aria-label="Starting position">
+          <option value="0">Start: Station 1 (scoring table side)</option>
+          <option value="1" selected>Start: Station 2 (center, behind the charge station)</option>
+          <option value="2">Start: Station 3 (loading zone side)</option>
+        </select>
         <button id="btnMatch" class="primary">Single Player</button>
+        <button id="btnControls">Controls</button>
       </div>
       <p class="hint">Press <b>H</b> in-game for controls</p>
     </div>
@@ -133,6 +127,7 @@
       <div class="buttons col">
         <button id="btnResume" class="primary">Resume</button>
         <button id="btnRestart">Restart</button>
+        <button id="btnControls2">Controls</button>
         <button id="btnMenu">Main menu</button>
       </div>
     </div>
@@ -145,6 +140,20 @@
       <div class="buttons">
         <button id="btnAgain" class="primary">Play again</button>
         <button id="btnResMenu">Main menu</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="controls" class="overlay hidden">
+    <div class="panel controls">
+      <h2>Controls</h2>
+      <p class="hint">Click a box, then press a key or a gamepad button / stick direction. <b>Backspace</b> clears it, <b>Esc</b> cancels.</p>
+      <div class="ctl-scroll"><table id="ctlTable"></table></div>
+      <div class="buttons">
+        <button id="ctlResetKb">Reset keyboard</button>
+        <button id="ctlClearGp">Clear gamepad</button>
+        <span id="ctlPad" class="hint"></span>
+        <button id="ctlDone" class="primary" style="margin-left:auto">Done</button>
       </div>
     </div>
   </div>
