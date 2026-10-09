@@ -303,7 +303,9 @@ export class AIController {
 
   // ---------------------------------------------------------- tasks
   nodeApproach(node) {
-    return [mx(GRID.outerX + this.r.half + 0.035, this.r.alliance), node.y, this.faceGrid];
+    // some robots score off the back (e.g. 2910 over the back for mid/high)
+    const side = this.r.mech.scoreSide ? this.r.mech.scoreSide(node.row) : 1;
+    return [mx(GRID.outerX + this.r.half + 0.035, this.r.alliance), node.y, side > 0 ? this.faceGrid : this.faceAway];
   }
 
   *scoreNode(node) {
@@ -445,7 +447,8 @@ export class AIController {
       if (d < 4) g.request[r.alliance] = type;
       r.setPreset(d < 2.8 ? 'double' : 'stow');
       r.intaking = d < 1.0;
-      this.navigate(x, slot.y, sub.facing, { tol: 0.03 });
+      const subSide = r.mech.substationSide ? r.mech.substationSide(type) : 1;
+      this.navigate(x, slot.y, subSide > 0 ? sub.facing : sub.facing + Math.PI, { tol: 0.03 });
       t += this.dt;
       if (t > 16) break;
       yield;

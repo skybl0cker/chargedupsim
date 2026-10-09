@@ -184,7 +184,7 @@ function readConfig(practice = false) {
     alliance: 'blue',
     station: 1, // center driver station, in front of the charge station
     driveMode: 'swerve',
-    robot: 'dja',
+    robot: document.getElementById('optRobot')?.value || '2910',
     autoRoutine: 'high_mobility_engage', // score high, over the charge station and back, engage
     staging: 'mixed',
     gfx: 'high',

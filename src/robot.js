@@ -17,7 +17,14 @@ export class Robot {
     this.team = P.team ?? team;
     this.isPlayer = isPlayer;
     this.skill = skill;
-    this.half = (P.frame + 2 * P.bumper) / 2;
+    // frame can be rectangular: X = front-to-back length, Y = side-to-side width
+    this.frameX = P.frameX ?? P.frame;
+    this.frameY = P.frameY ?? P.frame;
+    this.halfX = this.frameX / 2 + P.bumper;
+    this.halfY = this.frameY / 2 + P.bumper;
+    this.half = this.halfX; // distance from center to the front/back bumper face
+    this.modX = P.moduleX ?? P.moduleOffset;
+    this.modY = P.moduleY ?? P.moduleOffset;
     this.floorY = CH_HALF_H; // carpet -> body origin height
     this.mode = 'cone';
     this.preset = 'stow';
@@ -39,8 +46,7 @@ export class Robot {
     const g = groups(GROUP.ROBOT, GROUP.FIELD | GROUP.ROBOT | GROUP.PIECE | GROUP.CS | GROUP.CARPET);
     const extra = this.mech.colliders();
     const extraMass = extra.reduce((m, c) => m + c.mass, 0);
-    const H = this.half;
-    const chassis = R.ColliderDesc.roundCuboid(H - 0.03, CH_HALF_H - 0.03, H - 0.03, 0.03)
+    const chassis = R.ColliderDesc.roundCuboid(this.halfX - 0.03, CH_HALF_H - 0.03, this.halfY - 0.03, 0.03)
       .setMass(P.mass - extraMass).setFriction(0.0).setFrictionCombineRule(R.CoefficientCombineRule.Min).setRestitution(0.05).setCollisionGroups(g);
     register(phys.world.createCollider(chassis, this.body), 'robot', this);
     for (const c of extra) {
@@ -61,14 +67,14 @@ export class Robot {
     const root = new THREE.Group();
     this.root = root;
     this.scene.add(root);
-    const fr = P.frame;
-    const H = this.half;
+    const fx = this.frameX, fz = this.frameY;
+    const HX = this.halfX, HZ = this.halfY;
     const allianceMat = this.alliance === 'blue' ? MAT.blue : MAT.red;
     const y0 = -CH_HALF_H;
     // drivetrain frame rails + belly pan (lightened hex pattern)
     for (const s of [-1, 1]) {
-      box(fr, 0.05, 1 * IN, MAT.alu, new THREE.Vector3(0, y0 + 0.06, s * (fr / 2 - 0.5 * IN)), root);
-      box(1 * IN, 0.05, fr, MAT.alu, new THREE.Vector3(s * (fr / 2 - 0.5 * IN), y0 + 0.06, 0), root);
+      box(fx, 0.05, 1 * IN, MAT.alu, new THREE.Vector3(0, y0 + 0.06, s * (fz / 2 - 0.5 * IN)), root);
+      box(1 * IN, 0.05, fz, MAT.alu, new THREE.Vector3(s * (fx / 2 - 0.5 * IN), y0 + 0.06, 0), root);
     }
     const belly = canvasTexture(256, 256, (gx, w, h) => {
       gx.fillStyle = '#' + P.bellyColor.toString(16).padStart(6, '0');
@@ -81,19 +87,19 @@ export class Robot {
         gx.fill();
       }
     });
-    box(fr - 0.03, 0.006, fr - 0.03, new THREE.MeshStandardMaterial({ map: belly, metalness: 0.5, roughness: 0.5 }), new THREE.Vector3(0, y0 + 0.035, 0), root);
+    box(fx - 0.03, 0.006, fz - 0.03, new THREE.MeshStandardMaterial({ map: belly, metalness: 0.5, roughness: 0.5 }), new THREE.Vector3(0, y0 + 0.035, 0), root);
     // bumpers with team numbers on all four sides
     const bh = P.bumperTop - P.bumperBottom;
     const by = y0 + P.bumperBottom + bh / 2;
     const numTex = textTexture(String(this.team), { bg: this.alliance === 'blue' ? '#1f4fd1' : '#d1201f', w: 512, h: 128, font: 'bold 96px Arial' });
     const numMat = new THREE.MeshStandardMaterial({ map: numTex, roughness: 0.7 });
     for (const s of [-1, 1]) {
-      const b1 = new THREE.Mesh(new THREE.BoxGeometry(2 * H, bh, P.bumper), [allianceMat, allianceMat, allianceMat, allianceMat, numMat, numMat]);
-      b1.position.set(0, by, s * (H - P.bumper / 2));
+      const b1 = new THREE.Mesh(new THREE.BoxGeometry(2 * HX, bh, P.bumper), [allianceMat, allianceMat, allianceMat, allianceMat, numMat, numMat]);
+      b1.position.set(0, by, s * (HZ - P.bumper / 2));
       b1.castShadow = true;
       root.add(b1);
-      const b2 = new THREE.Mesh(new THREE.BoxGeometry(P.bumper, bh, fr), [numMat, numMat, allianceMat, allianceMat, allianceMat, allianceMat]);
-      b2.position.set(s * (H - P.bumper / 2), by, 0);
+      const b2 = new THREE.Mesh(new THREE.BoxGeometry(P.bumper, bh, fz), [numMat, numMat, allianceMat, allianceMat, allianceMat, allianceMat]);
+      b2.position.set(s * (HX - P.bumper / 2), by, 0);
       b2.castShadow = true;
       root.add(b2);
     }
@@ -101,10 +107,9 @@ export class Robot {
     this.modules = [];
     const wheelGeo = new THREE.CylinderGeometry(2 * IN, 2 * IN, 1.5 * IN, 20);
     wheelGeo.rotateX(Math.PI / 2);
-    const mo = P.moduleOffset;
     for (const [sx, sz] of [[1, 1], [1, -1], [-1, 1], [-1, -1]]) {
       const mod = new THREE.Group();
-      mod.position.set(sx * mo, y0 + 2 * IN - 0.005, sz * mo);
+      mod.position.set(sx * this.modX, y0 + 2 * IN - 0.005, sz * this.modY);
       const wheel = new THREE.Mesh(wheelGeo, MAT.black);
       wheel.castShadow = true;
       mod.add(wheel);
@@ -123,7 +128,7 @@ export class Robot {
     // player marker
     if (this.isPlayer) {
       const ring = new THREE.Mesh(
-        new THREE.RingGeometry(H * 1.45, H * 1.6, 40),
+        new THREE.RingGeometry(Math.max(HX, HZ) * 1.45, Math.max(HX, HZ) * 1.6, 40),
         new THREE.MeshBasicMaterial({ color: 0x22ff88, transparent: true, opacity: 0.55, side: THREE.DoubleSide, depthWrite: false })
       );
       ring.rotation.x = -Math.PI / 2;
@@ -164,9 +169,8 @@ export class Robot {
 
   // bumper corners in field coords
   corners() {
-    const H = this.half;
     return [[1, 1], [1, -1], [-1, -1], [-1, 1]].map(([a, b]) => {
-      const w = this.localToWorld(a * H, 0, b * H);
+      const w = this.localToWorld(a * this.halfX, 0, b * this.halfY);
       return [w.x, -w.z];
     });
   }
@@ -239,8 +243,8 @@ export class Robot {
     let carpet = 0, cs = 0, any = 0, csAlliance = null;
     const n = { x: 0, y: 0, z: 0 };
     const filter = groups(0xffff, GROUP.FIELD | GROUP.CS | GROUP.CARPET);
-    const k = this.profile.moduleOffset;
-    for (const [lx, lz] of [[k, k], [k, -k], [-k, k], [-k, -k]]) {
+    const kx = this.modX, kz = this.modY;
+    for (const [lx, lz] of [[kx, kz], [kx, -kz], [-kx, kz], [-kx, -kz]]) {
       const o = this.localToWorld(lx, 0, lz);
       const hit = rayDown({ x: o.x, y: o.y, z: o.z }, CH_HALF_H + 0.07, this.body, filter);
       if (!hit) continue;
@@ -294,7 +298,7 @@ export class Robot {
       const lvx = v.vx * c - v.vy * s;
       const lvy = v.vx * s + v.vy * c; // robot-left
       [[1, 1], [1, -1], [-1, 1], [-1, -1]].forEach(([sx, sz], i) => {
-        const rx = sx * P.moduleOffset, ry = -sz * P.moduleOffset;
+        const rx = sx * this.modX, ry = -sz * this.modY;
         this.moduleAngles[i] = Math.atan2(lvy + v.omega * rx, lvx - v.omega * ry);
       });
     }

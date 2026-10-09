@@ -27,12 +27,12 @@ It uses three.js for rendering and the Rapier physics engine (WASM). It has no b
 
 **Game pieces.** Pieces are rigid bodies. Cones (12.8 in, 1 lb 7 oz, convex hull with a square base) can tip over. Cubes are 9.5 in rounded cubes.
 
-**Robot.** Team 9999's double-jointed arm robot (profile in `src/robots.js`, mechanism in `src/mechanisms/`):
-- **Double-jointed arm (team 9999):** arm geometry based on FRC 6328's public 2023 code. Floor pickup depends on mode: in cube mode the front cube intake deploys and the arm waits at it for the handoff; in cone mode the arm picks cones up off the floor behind the robot (opposite the cube intake) and the cube intake stays up.
-  - Chassis: 25 in frame and SDS MK4i L2 swerve at 14.5 ft/s.
-  - Arm: double-jointed, shoulder 0.654 m up, segments of 0.638 m and 0.806 m plus a 0.261 m wrist, using their joint limits and their inverse-kinematics math.
-  - Front/back scoring: it scores off whichever side faces the grid.
-  - Gripper: yellow compliant wheels that eject cubes.
+**Robots.** Pick one on the home screen.
+- **2910 Jack in the Bot — Phantom (2023), the default:** built from Team 2910's public robot code, CAD render and reveal.
+  - **Chassis:** 26 × 28 in frame (22.75 × 20.75 in module layout) on SDS MK4i L3 swerve.
+  - **Arm:** a pivoting 2-stage cascade telescoping arm (22.75–53 in) with a wrist and roller intake. It uses their exact pivot location, tube offset, joint limits and motion speeds, and retracts before big shoulder swings like their code.
+  - **Poses:** every scoring and pickup position is their real shoulder / extension / wrist value from `ArmPoseConstants.java`. That means scoring mid and high over the **back**, the low row out the **front**, cubes off the floor in front and upright cones behind, and double-substation cones over the back and cubes from the front.
+- **9999 Double-jointed arm:** arm geometry based on FRC 6328's public 2023 code. In cube mode the front cube intake deploys and the arm waits at it for the handoff; in cone mode the arm picks cones up off the floor behind the robot.
 
 **Arcade handling.**
 - **Arm:** moves smoothly and directly between presets and doesn't collide with the field. The cube intake swings out of the way when the arm comes down on its side.
@@ -90,4 +90,5 @@ This is an unofficial fan project and isn't affiliated with or endorsed by *FIRS
 - ***FIRST*® Robotics Competition:** CHARGED UP℠, *FIRST*® ENERGIZE℠, and their logos are trademarks of *FIRST*. Field dimensions, rules, and scoring come from the [2023 FRC Game Manual](https://www.firstinspires.org/robotics/frc/game-and-season). The logos in `assets/` are taken from that manual.
 - **Team 254, The Cheesy Poofs:** the match sounds in `assets/audio/` (start, end-of-auto/match buzzer, teleop start, endgame warning) come from [Cheesy Arena](https://github.com/Team254/cheesy-arena), their open-source field management system.
 - **Team 6328, Mechanical Advantage:** field element positions were cross-checked against `FieldConstants` from their [RobotCode2023](https://github.com/Mechanical-Advantage/RobotCode2023). The team 9999 robot's double-jointed arm geometry, joint limits, inverse kinematics, and cube intake are based on that code (`arm_config.json`, `ArmKinematics.java`, `ArmPose.java`, `CubeIntake.java`) and their 2023 Open Alliance build thread.
+- **Team 2910, Jack in the Bot:** the 2910 robot's dimensions, arm geometry, limits, speeds and every arm pose come from their [2023CompetitionRobot-Public](https://github.com/FRCTeam2910/2023CompetitionRobot-Public) code (`ArmSubsystem.java`, `ArmPoseConstants.java`, `ArmIOFalcon500.java`, `DrivetrainSubsystem.java`), and its look from their 2023 CAD release and robot reveal.
 - **Libraries:** [three.js](https://threejs.org) (MIT) for 3D rendering and [Rapier](https://rapier.rs) (Apache 2.0) for physics.

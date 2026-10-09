@@ -4,24 +4,24 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Charged Up Sim — FRC 2023</title>
-  <link rel="stylesheet" href="style.css?v=49" />
+  <link rel="stylesheet" href="style.css?v=50" />
   <script type="importmap">
     {
       "imports": {
         "three": "./vendor/three/three.module.js",
         "three/addons/": "./vendor/three/addons/",
-        "./src/ai.js": "./src/ai.js?v=49",
-        "./src/constants.js": "./src/constants.js?v=49",
-        "./src/field.js": "./src/field.js?v=49",
-        "./src/game.js": "./src/game.js?v=49",
-        "./src/hud.js": "./src/hud.js?v=49",
-        "./src/input.js": "./src/input.js?v=49",
-        "./src/main.js": "./src/main.js?v=49",
-        "./src/physics.js": "./src/physics.js?v=49",
-        "./src/pieces.js": "./src/pieces.js?v=49",
-        "./src/robot.js": "./src/robot.js?v=49",
-        "./src/sound.js": "./src/sound.js?v=49",
-        "./src/util.js": "./src/util.js?v=49"
+        "./src/ai.js": "./src/ai.js?v=50",
+        "./src/constants.js": "./src/constants.js?v=50",
+        "./src/field.js": "./src/field.js?v=50",
+        "./src/game.js": "./src/game.js?v=50",
+        "./src/hud.js": "./src/hud.js?v=50",
+        "./src/input.js": "./src/input.js?v=50",
+        "./src/main.js": "./src/main.js?v=50",
+        "./src/physics.js": "./src/physics.js?v=50",
+        "./src/pieces.js": "./src/pieces.js?v=50",
+        "./src/robot.js": "./src/robot.js?v=50",
+        "./src/sound.js": "./src/sound.js?v=50",
+        "./src/util.js": "./src/util.js?v=50"
       }
     }
   </script>
@@ -107,6 +107,10 @@
     <div class="panel small home">
       <img class="cu-logo" src="assets/charged-up.png" alt="CHARGED UP" />
       <div class="buttons col">
+        <select id="optRobot" aria-label="Robot">
+          <option value="2910">2910 Jack in the Bot — Phantom</option>
+          <option value="dja">9999 Double-jointed arm</option>
+        </select>
         <button id="btnMatch" class="primary">Single Player</button>
       </div>
       <p class="hint">Press <b>H</b> in-game for controls</p>

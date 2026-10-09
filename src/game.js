@@ -44,7 +44,9 @@ export class Game {
     r.driveMode = cfg.driveMode;
     const col = [0, 4, 8][i0];
     r.startCol = col;
-    r.place(mx(GRID.outerX + r.half + 0.03, a0), GRID.nodeY[col], a0 === 'blue' ? Math.PI : 0);
+    // start facing the grid with whichever side scores the preload high
+    const backScore = r.mech.scoreSide && r.mech.scoreSide(2) < 0;
+    r.place(mx(GRID.outerX + r.half + 0.03, a0), GRID.nodeY[col], (a0 === 'blue') !== backScore ? Math.PI : 0);
     r.setMode(GRID.isCubeCol(col) ? 'cube' : 'cone');
     r.setPreset('stow');
     this.robots.push(r);
