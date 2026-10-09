@@ -4,24 +4,24 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Charged Up Sim — FRC 2023</title>
-  <link rel="stylesheet" href="style.css?v=50" />
+  <link rel="stylesheet" href="style.css?v=51" />
   <script type="importmap">
     {
       "imports": {
         "three": "./vendor/three/three.module.js",
         "three/addons/": "./vendor/three/addons/",
-        "./src/ai.js": "./src/ai.js?v=50",
-        "./src/constants.js": "./src/constants.js?v=50",
-        "./src/field.js": "./src/field.js?v=50",
-        "./src/game.js": "./src/game.js?v=50",
-        "./src/hud.js": "./src/hud.js?v=50",
-        "./src/input.js": "./src/input.js?v=50",
-        "./src/main.js": "./src/main.js?v=50",
-        "./src/physics.js": "./src/physics.js?v=50",
-        "./src/pieces.js": "./src/pieces.js?v=50",
-        "./src/robot.js": "./src/robot.js?v=50",
-        "./src/sound.js": "./src/sound.js?v=50",
-        "./src/util.js": "./src/util.js?v=50"
+        "./src/ai.js": "./src/ai.js?v=51",
+        "./src/constants.js": "./src/constants.js?v=51",
+        "./src/field.js": "./src/field.js?v=51",
+        "./src/game.js": "./src/game.js?v=51",
+        "./src/hud.js": "./src/hud.js?v=51",
+        "./src/input.js": "./src/input.js?v=51",
+        "./src/main.js": "./src/main.js?v=51",
+        "./src/physics.js": "./src/physics.js?v=51",
+        "./src/pieces.js": "./src/pieces.js?v=51",
+        "./src/robot.js": "./src/robot.js?v=51",
+        "./src/sound.js": "./src/sound.js?v=51",
+        "./src/util.js": "./src/util.js?v=51"
       }
     }
   </script>
@@ -110,6 +110,16 @@
         <select id="optRobot" aria-label="Robot">
           <option value="2910">2910 Jack in the Bot — Phantom</option>
           <option value="dja">9999 Double-jointed arm</option>
+        </select>
+        <select id="optAuto" aria-label="Autonomous">
+          <option value="high_mobility_engage" selected>Auto: High + mobility + engage (over &amp; back)</option>
+          <option value="high_engage">Auto: High + engage</option>
+          <option value="high_mobility">Auto: High + mobility</option>
+          <option value="two_piece">Auto: Two piece</option>
+          <option value="high">Auto: Score preload high</option>
+          <option value="mobility">Auto: Mobility only</option>
+          <option value="none">Auto: None (sit still)</option>
+          <option value="manual">Auto: Manual (you drive it)</option>
         </select>
         <button id="btnMatch" class="primary">Single Player</button>
       </div>

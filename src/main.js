@@ -185,7 +185,7 @@ function readConfig(practice = false) {
     station: 1, // center driver station, in front of the charge station
     driveMode: 'swerve',
     robot: document.getElementById('optRobot')?.value || '2910',
-    autoRoutine: 'high_mobility_engage', // score high, over the charge station and back, engage
+    autoRoutine: document.getElementById('optAuto')?.value || 'high_mobility_engage',
     staging: 'mixed',
     gfx: 'high',
     practice,
@@ -230,6 +230,15 @@ input.handlers.pause = () => {
 };
 input.handlers.help = () => $('help').classList.toggle('hidden');
 
+// remember the robot / auto picks between visits
+for (const id of ['optRobot', 'optAuto']) {
+  const el = $(id);
+  try {
+    const saved = localStorage.getItem(id);
+    if (saved && [...el.options].some((o) => o.value === saved)) el.value = saved;
+  } catch {}
+  el.addEventListener('change', () => { try { localStorage.setItem(id, el.value); } catch {} });
+}
 $('btnMatch').onclick = () => { sound.unlock(); startGame(readConfig(false)); };
 $('btnResume').onclick = () => input.handlers.pause();
 $('btnRestart').onclick = () => startGame(config);

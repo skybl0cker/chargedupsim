@@ -150,4 +150,4 @@ button.primary:hover { background: #ffe14d; }
 .panel.home .cu-logo { width: 80%; max-width: 260px; margin: 6px 0 4px; }
 .panel.home .buttons { width: 100%; }
 .panel.home .hint { margin-top: 14px; }
-.panel.home select { width: 100%; padding: 10px; font-size: 15px; }
+.panel.home select { width: 100%; padding: 10px; font-size: 15px; margin-bottom: 8px; }

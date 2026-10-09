@@ -268,7 +268,8 @@ export class Game {
     if (this.enabled) {
       for (const ai of this.ais) ai.update(dt);
       if (this.player) {
-        if (this.isAuto) this.playerAuto.update(dt);
+        // manual auto: the driver controls the robot during the 15 s autonomous period too
+        if (this.isAuto && this.config.autoRoutine !== 'manual') this.playerAuto.update(dt);
         else input.apply(this.player, this, dt);
       }
     }
