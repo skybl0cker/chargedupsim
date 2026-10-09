@@ -29,7 +29,7 @@ const POSES = {
   portalCone: pose(111.5, 43.5, 88.7846), // double substation, cone over the back
   portalCube: pose(59.0, 43.0, -50.0), // double substation, cube out the front
   groundCube: pose(1.6905, 26.0, 13.1927), // GROUND_CUBE (front)
-  groundCone: pose(182.0, 22.835, 24.1472), // GROUND_CONE_UPRIGHT (behind)
+  groundCone: pose(8.0, 29.13386, -61.5), // GROUND_CONE_FLAT: cones (tipped or standing) come in the front, same side as cubes
   single: pose(33.7, 22.95, 44.86), // SINGLE_SUBSTATION_CUBE
 };
 
@@ -207,7 +207,7 @@ export class Arm2910 {
     return new THREE.Vector3(Math.cos(a) * 0.15, Math.sin(a) * 0.15, 0);
   }
 
-  // which side of the robot does what (2910 scored mid/high over the back, everything else off the front)
+  // which side of the robot does what (2910 scored mid/high over the back; the floor intake and low row are off the front)
   scoreSide(row) {
     return row === 0 ? 1 : -1;
   }
@@ -217,7 +217,7 @@ export class Arm2910 {
   }
 
   floorPickup(type) {
-    return type === 'cube' ? { side: 1, reach: 0.65 } : { side: -1, reach: 1.07 };
+    return type === 'cube' ? { side: 1, reach: 0.65 } : { side: 1, reach: 0.66 }; // everything is intaken off the front
   }
 
   // for the rules: max height and extension past the frame perimeter (front/back)

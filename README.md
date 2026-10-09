@@ -31,7 +31,7 @@ It uses three.js for rendering and the Rapier physics engine (WASM). It has no b
 - **2910 Jack in the Bot — Phantom (2023), the default:** built from Team 2910's public robot code, CAD render and reveal.
   - **Chassis:** 26 × 28 in frame (22.75 × 20.75 in module layout) on SDS MK4i L3 swerve.
   - **Arm:** a pivoting 2-stage cascade telescoping arm (22.75–53 in) with a wrist and roller intake. It uses their exact pivot location, tube offset, joint limits and motion speeds, and retracts before big shoulder swings like their code.
-  - **Poses:** every scoring and pickup position is their real shoulder / extension / wrist value from `ArmPoseConstants.java`. That means scoring mid and high over the **back**, the low row out the **front**, cubes off the floor in front and upright cones behind, and double-substation cones over the back and cubes from the front.
+  - **Poses:** every scoring and pickup position is their real shoulder / extension / wrist value from `ArmPoseConstants.java`. That means scoring mid and high over the **back**, the low row out the **front**, and both cubes and cones (standing or tipped over) off the floor in **front**, and double-substation cones over the back and cubes from the front.
 - **9999 Double-jointed arm:** arm geometry based on FRC 6328's public 2023 code. In cube mode the front cube intake deploys and the arm waits at it for the handoff; in cone mode the arm picks cones up off the floor behind the robot.
 
 **Arcade handling.**
