@@ -98,6 +98,19 @@ export class Robot {
       b1.position.set(0, by, s * (HZ - P.bumper / 2));
       b1.castShadow = true;
       root.add(b1);
+      if (s > 0 && P.bumperGap) {
+        // front bumper split around the intake opening, with the frame's bumper backing showing in the gap
+        const seg = (fz - P.bumperGap) / 2;
+        for (const t of [-1, 1]) {
+          const bs = new THREE.Mesh(new THREE.BoxGeometry(P.bumper, bh, seg), allianceMat);
+          bs.position.set(HX - P.bumper / 2, by, t * (P.bumperGap / 2 + seg / 2));
+          bs.castShadow = true;
+          root.add(bs);
+        }
+        box(0.25 * IN, bh * 0.8, P.bumperGap, new THREE.MeshStandardMaterial({ color: 0xc8a032, metalness: 0.6, roughness: 0.4 }),
+          new THREE.Vector3(fx / 2 + 0.125 * IN, by, 0), root);
+        continue;
+      }
       const b2 = new THREE.Mesh(new THREE.BoxGeometry(P.bumper, bh, fz), [numMat, numMat, allianceMat, allianceMat, allianceMat, allianceMat]);
       b2.position.set(s * (HX - P.bumper / 2), by, 0);
       b2.castShadow = true;

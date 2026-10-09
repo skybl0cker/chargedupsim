@@ -11,6 +11,7 @@ export const ROBOTS = {
     frameX: 28 * IN, // 26x28 frame perimeter, long axis front-to-back
     frameY: 26 * IN,
     bumper: 3.25 * IN,
+    bumperGap: 10 * IN, // front bumper is split around the claw opening
     bumperBottom: 1.0 * IN,
     bumperTop: 6.0 * IN,
     mass: 56, // ~90 lb robot + ballast, bumpers and battery
@@ -29,6 +30,7 @@ export const ROBOTS = {
     team: 9999,
     frame: 25 * IN, // small square frame perimeter
     bumper: 3.25 * IN,
+    bumperGap: 10 * IN, // front bumper is split around the claw opening
     bumperBottom: 1.0 * IN,
     bumperTop: 6.0 * IN,
     mass: 56,
