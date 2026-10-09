@@ -285,6 +285,7 @@ export class Robot {
       const av = this.body.angvel();
       this.body.setAngvel({ x: av.x, y: approach(av.y, omega, P.maxAlpha * dt * traction), z: av.z }, true);
     }
+    this.antiTip(dt);
     // module visuals
     const v = this.fieldVel();
     const spd = Math.hypot(v.vx, v.vy);
@@ -302,6 +303,22 @@ export class Robot {
 
   // Held piece orientation: cubes ride with the gripper, upright cones stay upright, tipped cones lie
   // along the gripper with the tip pointing out (so the wrist has to point up to score them)
+  // Real robots carry their battery and drivetrain low and rarely tip. Damp pitch/roll, and push back
+  // upright once the lean goes past anything the charge station (±15°) can cause.
+  antiTip(dt) {
+    const av = this.body.angvel();
+    const damp = Math.max(0, 1 - 6 * dt);
+    this.body.setAngvel({ x: av.x * damp, y: av.y, z: av.z * damp }, true);
+    const up = new THREE.Vector3(0, 1, 0).applyQuaternion(this.quat());
+    const tilt = Math.acos(clamp(up.y, -1, 1));
+    const limit = (18 * Math.PI) / 180;
+    if (tilt > limit) {
+      const axis = new THREE.Vector3().crossVectors(up, new THREE.Vector3(0, 1, 0)).normalize();
+      const k = this.body.mass() * 9.81 * 0.6 * (1 + (tilt - limit) * 6); // N·m, grows the further it leans
+      this.body.applyTorqueImpulse({ x: axis.x * k * dt, y: axis.y * k * dt, z: axis.z * k * dt }, true);
+    }
+  }
+
   heldPose() {
     const w = this.effectorWorld();
     const q = this.quat();

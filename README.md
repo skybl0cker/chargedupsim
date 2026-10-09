@@ -42,7 +42,6 @@ It uses three.js for rendering and the Rapier physics engine (WASM). It has no b
 - **G106:** taller than 6 ft 6 in.
 - **G107:** more than 48 in past the frame for over 3 s (tech foul if it scores).
 - **G108:** extended in the opponent's community or loading zone.
-- **G109:** extended in two directions.
 - **G302:** crossing the center line in auto.
 - **G304:** moving the opponent's charge station.
 - **G401:** knocking a piece out of the field.

@@ -178,8 +178,6 @@ export class Game {
     const extended = env.front > 0.03 || env.back > 0.03;
     ep('G106', env.maxH > 78 * 0.0254, 0, () => this.addFoul(r, 'G106', 'robot taller than 6 ft 6 in'));
     ep('G107', Math.max(env.front, env.back) > 48 * 0.0254, 3, () => this.addFoul(r, 'G107', 'extended more than 48 in past the frame'));
-    ep('G109', env.front > 0.03 && env.back > 0.03 && !ownZones.some((z) => this.fullyIn(r, z)), 3,
-      () => this.addFoul(r, 'G109', 'extended in multiple directions'));
     ep('G108', extended && oppZones.some((z) => this.anyIn(r, z)), 3,
       (n) => this.addFoul(r, 'G108', "extended in the opponent's zone", n > 1));
     if (this.isAuto) {

@@ -209,7 +209,7 @@ export class Arm6328 {
 
   colliders() {
     // A-frame tower (the arm itself is not a physics body)
-    return [{ half: [0.24, 0.28, 0.03], pos: [0, 0.075 + 0.28, Z_TOWER], mass: 6 }];
+    return [{ half: [0.24, 0.28, 0.03], pos: [0, 0.075 + 0.28, Z_TOWER], mass: 1.5 }]; // light: the robot's weight sits low in the drivetrain
   }
 
   // ---------------------------------------------------------------- arm physics
